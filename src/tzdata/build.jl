@@ -62,7 +62,8 @@ function build(
     if !isempty(compiled_dir)
         @info "Converting tz source files into TimeZone data"
         tz_source = TZSource(joinpath.(tz_source_dir, regions))
-        compile(tz_source, compiled_dir)
+        results = compile(tz_source, compiled_dir)
+        build_fast_files(results, compiled_dir)
     end
 
     return version

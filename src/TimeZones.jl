@@ -51,6 +51,8 @@ include("utcoffset.jl")
 include(joinpath("types", "timezone.jl"))
 include(joinpath("types", "fixedtimezone.jl"))
 include(joinpath("types", "variabletimezone.jl"))
+include(joinpath("types", "fastfixedtimezone.jl"))
+include(joinpath("types", "fastvariabletimezone.jl"))
 include(joinpath("types", "zoneddatetime.jl"))
 include("exceptions.jl")
 include(joinpath("tzdata", "TZData.jl"))
@@ -70,5 +72,9 @@ include("rounding.jl")
 include("parse.jl")
 include("plotting.jl")
 include("deprecated.jl")
+
+zones_file = joinpath(TZData.COMPILED_DIR, "zones.jl")
+Base.include_dependency(zones_file) # Re-precompile if zones.jl changes
+ispath(zones_file) && include(zones_file)
 
 end # module

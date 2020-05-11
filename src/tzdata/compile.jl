@@ -711,6 +711,119 @@ function compile(tz_source::TZSource, dest_dir::AbstractString; kwargs...)
     return results
 end
 
+
+# Convert all '/' to '__', all '+' to 'Plus' and '-' to 'Minus', unless
+# it's a hyphen, in which case remove it. This is so the names can be used
+# as identifiers.
+function convert_bad_chars(name::String)
+    name = replace(replace(name, "/" => "__"), "+" => "Plus")
+    pos = findfirst('-', name)
+    if pos !== nothing
+        rest = name[pos:end]
+        if length(rest) > 0 && isnumeric(rest[1])
+            replace(name, "-" => "Minus")
+        else
+            replace(name, "-" => "")
+        end
+    else
+        name
+    end
+end
+
+function fast_repr(dt::DateTime)
+    # Using the numeric DateTime constructor is faster than the string one
+    y = Year(dt).value
+    mo = Month(dt).value
+    d = Day(dt).value
+    h = Hour(dt).value
+    mi = Minute(dt).value
+    s = Second(dt).value
+    "DateTime($y, $mo, $d, $h, $mi, $s)"
+end
+
+fast_repr(::Nothing) = "nothing"
+
+function repr_vector(xs::Vector{String}, indent="")
+    b = IOBuffer()
+    print(b, indent * "[")
+    for x in xs
+        print(b, "$x, ")
+    end
+    print(b, "]")
+    return String(take!(b))
+end
+
+function write_fast_files(f, zones)
+    # Zone consts
+    for (i, (tz, class)) in enumerate(zones)
+        varname = convert_bad_chars(tz.name)
+        println(f, "const $varname = reinterpret(VariableTimeZoneF, UInt16($i))")
+    end
+    println(f, "\n")
+
+    # Names
+    println(f, "function name(tz::VariableTimeZoneF)")
+    for (i, (tz, class)) in enumerate(zones)
+        varname = convert_bad_chars(tz.name)
+        if_str = i == 1 ? "if" : "elseif"
+        println(f, "    $if_str tz == $varname; $(repr(tz.name))") # ; only needed for readability
+    end
+    println(f, "    else error()\n    end\nend\n\n")
+
+    # Cutoffs
+    println(f, "function cutoff(tz::VariableTimeZoneF)")
+    for (i, (tz, class)) in enumerate(zones)
+        varname = convert_bad_chars(tz.name)
+        if_str = i == 1 ? "if" : "elseif"
+        println(f, "    $if_str tz == $varname; $(fast_repr(tz.cutoff))")
+    end
+    println(f, "    else error()\n    end\nend\n\n")
+
+    # TransitionSets
+    for (i, (tz, class)) in enumerate(zones)
+        varname = convert_bad_chars(tz.name) 
+        println(f, "const $(varname)__transitions = TransitionSet(")
+        tran_times_strs = String[]
+        std_strs = String[]
+        dst_strs = String[]
+        name_strs = String[]
+
+        for tran in tz.transitions
+            push!(tran_times_strs, fast_repr(tran.utc_datetime))
+            push!(std_strs, "Second($(tran.zone.offset.std.value))")
+            push!(dst_strs, "Second($(tran.zone.offset.dst.value))")
+            push!(name_strs, repr(tran.zone.name))
+        end
+
+        indent = "    "
+        println(f, repr_vector(tran_times_strs, indent) * ",")
+        println(f, repr_vector(std_strs, indent) * ",")
+        println(f, repr_vector(dst_strs, indent) * ",")
+        println(f, repr_vector(name_strs, indent))
+        println(f, ")\n")
+    end
+    
+    # Transition getter
+    println(f, "function transitions(tz::VariableTimeZoneF)")
+    for (i, (tz, class)) in enumerate(zones)
+        varname = convert_bad_chars(tz.name)
+        if_str = i == 1 ? "if" : "elseif"
+        println(f, "    $if_str tz == $varname; $(varname)__transitions")
+    end
+    println(f, "    else error()\n    end\nend\n\n")
+end
+
+function build_fast_files(results, dest_dir::AbstractString)
+    variable_zones = sort(filter(x -> isa(x[1], VariableTimeZone), results); by=x -> x[1].name)
+    @assert length(variable_zones) <= 700 # In theory, up to 65535
+
+    path = joinpath(dest_dir, "zones.jl")
+    open(path, "w") do f
+        write_fast_files(f, variable_zones)
+    end
+end
+
+
 # TODO: Deprecate?
 function compile(tz_source_dir::AbstractString=TZ_SOURCE_DIR, dest_dir::AbstractString=COMPILED_DIR; kwargs...)
     tz_source_paths = joinpath.(tz_source_dir, readdir(tz_source_dir))
