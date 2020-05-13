@@ -171,8 +171,7 @@ function next_transition_instant(zdt::ZonedDateTime)
     # transition where the clock changes from 01:59 → 03:00 we would return 02:00 where
     # the UTC datetime of 02:00 == 03:00.
     utc_datetime = tz.transitions[index].utc_datetime
-    prev_zone = tz.transitions[index - 1].zone
-    ZonedDateTime(utc_datetime, tz, prev_zone)
+    ZonedDateTime(utc_datetime, tz, Inner)
 end
 
 next_transition_instant(tz::TimeZone=localzone()) = next_transition_instant(@mock now(tz))
@@ -226,14 +225,15 @@ function show_next_transition(io::IO, zdt::ZonedDateTime)
 
     epsilon = eps(instant)
     from, to = instant - epsilon, instant + zero(epsilon)
-    direction = value(to.zone.offset - from.zone.offset) < 0 ? "Backward" : "Forward"
+    from_zone, to_zone = current_zone(from), current_zone(to)
+    direction = value(to_zone.offset - from_zone.offset) < 0 ? "Backward" : "Forward"
 
-    function zdt_format(zdt)
-        name_suffix = zdt.zone.name
+    function zdt_format(zdt, zone)
+        name_suffix = zone.name
         !isempty(name_suffix) && (name_suffix = string(" (", name_suffix, ")"))
         string(
             Dates.format(zdt, dateformat"yyyy-mm-ddTHH:MM:SS.sss"),
-            zdt.zone.offset,  # Note: "zzz" will not work in the format above as is
+            zone.offset,  # Note: "zzz" will not work in the format above as is
             name_suffix,
         )
     end
@@ -243,9 +243,9 @@ function show_next_transition(io::IO, zdt::ZonedDateTime)
 
     println(io, "Transition Date:   ", Dates.format(instant, dateformat"yyyy-mm-dd"))
     println(io, "Local Time Change: ", time_format(instant), " → ", time_format(to), " (", direction, ")")
-    println(io, "Offset Change:     ", repr("text/plain", from.zone.offset), " → ", repr("text/plain", to.zone.offset))
-    println(io, "Transition From:   ", zdt_format(from))
-    println(io, "Transition To:     ", zdt_format(to))
+    println(io, "Offset Change:     ", repr("text/plain", from_zone.offset), " → ", repr("text/plain", to_zone.offset))
+    println(io, "Transition From:   ", zdt_format(from, from_zone))
+    println(io, "Transition To:     ", zdt_format(to, to_zone))
 
 end
 

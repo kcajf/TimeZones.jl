@@ -6,21 +6,47 @@ using Dates: AbstractDateTime, argerror, validargs
 # A `DateTime` that includes `TimeZone` information.
 # """
 
+
+abstract type Inner end
+
 struct ZonedDateTime <: AbstractDateTime
     utc_datetime::DateTime
     timezone::TimeZone
-    zone::FixedTimeZone  # The current zone for the utc_datetime.
 
-    function ZonedDateTime(utc_datetime::DateTime, timezone::TimeZone, zone::FixedTimeZone)
-        return new(utc_datetime, timezone, zone)
+    function ZonedDateTime(utc_datetime::DateTime, timezone::TimeZone)
+        return new(utc_datetime, timezone)
     end
 
-    function ZonedDateTime(utc_datetime::DateTime, timezone::VariableTimeZone, zone::FixedTimeZone)
+    # Previously, there was:
+    # ZonedDateTime(utc_datetime::DateTime, timezone::VariableTimeZone, zone::FixedTimeZone)
+    # ZonedDateTime(dt::DateTime, timezone::VariableTimeZone; from_utc::Bool=false)
+    # When we delete the 3rd argument of the first method, we make the second method ambiguous.
+    # Thankfully the first method is internal-only really (it just does the cutoff checking), 
+    # so for now add this disambiguating 3rd argument `Inner`. Can revisit tidying that up later.
+    
+    function ZonedDateTime(utc_datetime::DateTime, timezone::FixedTimeZone, ::Type{Inner})
+        return new(utc_datetime, timezone)
+    end
+
+    function ZonedDateTime(utc_datetime::DateTime, timezone::VariableTimeZone, ::Type{Inner})
         if timezone.cutoff !== nothing && utc_datetime >= timezone.cutoff
             throw(UnhandledTimeError(timezone))
         end
+        return new(utc_datetime, timezone)
+    end
+end
 
-        return new(utc_datetime, timezone, zone)
+
+# TODO Once I change ZonedDateTime to be parametric in the timezone type, this if/else will become a type dispatch
+function current_zone(ztd::ZonedDateTime)
+    if isa(ztd.timezone, VariableTimeZone)
+        # ztd is a valid ZonedDateTime, so there is only a single unambiguous zone active at ztd.utc_datetime
+        range = transition_range(ztd.utc_datetime, ztd.timezone, UTC)
+        return ztd.timezone.transitions[first(range)].zone
+    elseif isa(ztd.timezone, FixedTimeZone)
+        return ztd.timezone
+    else
+        error("unknown timezone type $(typeof(ztd.timezone))")
     end
 end
 
@@ -47,7 +73,7 @@ end
 
 function ZonedDateTime(dt::DateTime, tz::FixedTimeZone; from_utc::Bool=false)
     utc_dt = from_utc ? dt : dt - tz.offset
-    return ZonedDateTime(utc_dt, tz, tz)
+    return ZonedDateTime(utc_dt, tz, Inner)
 end
 
 """
@@ -87,7 +113,7 @@ function ZonedDateTime(dt::DateTime, tz::VariableTimeZone, is_dst::Bool)
     elseif num == 0
         throw(NonExistentTimeError(dt, tz))
     elseif num == 2
-        mask = [isdst(zdt.zone.offset) for zdt in possible]
+        mask = [isdst(current_zone(zdt).offset) for zdt in possible]
 
         # Mask is expected to be unambiguous.
         !xor(mask...) && throw(AmbiguousTimeError(dt, tz))

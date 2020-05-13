@@ -73,11 +73,11 @@ function Dates.tryparsenext(d::DatePart{'Z'}, str, i, len)
 end
 
 function Dates.format(io::IO, d::DatePart{'z'}, zdt, locale)
-    write(io, string(zdt.zone.offset))
+    write(io, string(current_zone(zdt).offset))
 end
 
 function Dates.format(io::IO, d::DatePart{'Z'}, zdt, locale)
-    write(io, string(zdt.zone))  # In most cases will be an abbreviation.
+    write(io, string(current_zone(zdt)))  # In most cases will be an abbreviation.
 end
 
 # Note: ISOZonedDateTimeFormat is defined in the module __init__ which means that this

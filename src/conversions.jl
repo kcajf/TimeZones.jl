@@ -26,7 +26,7 @@ julia> DateTime(zdt, UTC)
 """
 DateTime(::ZonedDateTime, ::Union{Type{Local}, Type{UTC}})
 
-Dates.DateTime(zdt::ZonedDateTime, ::Type{Local}) = zdt.utc_datetime + zdt.zone.offset
+Dates.DateTime(zdt::ZonedDateTime, ::Type{Local}) = zdt.utc_datetime + current_zone(zdt).offset
 Dates.DateTime(zdt::ZonedDateTime, ::Type{UTC}) = zdt.utc_datetime
 
 
@@ -152,12 +152,11 @@ function astimezone(zdt::ZonedDateTime, tz::VariableTimeZone)
         throw(NonExistentTimeError(DateTime(zdt, Local), tz))
     end
 
-    zone = tz.transitions[i].zone
-    return ZonedDateTime(zdt.utc_datetime, tz, zone)
+    return ZonedDateTime(zdt.utc_datetime, tz, Inner)
 end
 
 function astimezone(zdt::ZonedDateTime, tz::FixedTimeZone)
-    return ZonedDateTime(zdt.utc_datetime, tz, tz)
+    return ZonedDateTime(zdt.utc_datetime, tz, Inner)
 end
 
 function zdt2julian(zdt::ZonedDateTime)

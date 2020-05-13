@@ -16,6 +16,12 @@ function transition_range(local_dt::DateTime, tz::VariableTimeZone, ::Type{Local
 
     # Determine the earliest transition the local DateTime could
     # occur within.
+    for t in transitions
+        if !isa(t, Transition)
+            println("shit, $t")
+
+        end
+    end
     start = searchsortedlast(
         transitions, earliest,
         by=el -> isa(el, Transition) ? el.utc_datetime : el,
@@ -59,7 +65,7 @@ function interpret(local_dt::DateTime, tz::VariableTimeZone, ::Type{Local})
         utc_dt = local_dt - t[i].zone.offset
 
         if utc_dt >= t[i].utc_datetime && (i == n || utc_dt < t[i + 1].utc_datetime)
-            push!(interpretations, ZonedDateTime(utc_dt, tz, t[i].zone))
+            push!(interpretations, ZonedDateTime(utc_dt, tz, Inner))
         end
     end
 
@@ -69,8 +75,7 @@ end
 function interpret(utc_dt::DateTime, tz::VariableTimeZone, ::Type{UTC})
     range = transition_range(utc_dt, tz, UTC)
     length(range) == 1 || error("Internal TimeZones error: A UTC DateTime should only have a single interpretation")
-    i = first(range)
-    return [ZonedDateTime(utc_dt, tz, tz.transitions[i].zone)]
+    return [ZonedDateTime(utc_dt, tz, Inner)]
 end
 
 """
@@ -113,11 +118,11 @@ function shift_gap(local_dt::DateTime, tz::VariableTimeZone)
 
         # UTC DateTime proceeds the end of the transition range
         elseif !ends_before
-            push!(boundaries, ZonedDateTime(t[i + 1].utc_datetime - delta, tz, t[i].zone))
+            push!(boundaries, ZonedDateTime(t[i + 1].utc_datetime - delta, tz, Inner))
 
         # UTC DateTime preceeds the start of the transition range
         elseif !starts_after
-            push!(boundaries, ZonedDateTime(t[i].utc_datetime, tz, t[i].zone))
+            push!(boundaries, ZonedDateTime(t[i].utc_datetime, tz, Inner))
         end
 
         # A slower but much easier to understand version of the above code:

@@ -7,7 +7,7 @@ end
 function Base.floor(zdt::ZonedDateTime, p::TimePeriod)
     # Rounding is done using the current fixed offset to avoid transitional ambiguities.
     dt = floor(DateTime(zdt, Local), p)
-    utc_dt = dt - zdt.zone.offset
+    utc_dt = dt - current_zone(zdt).offset
     return ZonedDateTime(utc_dt, timezone(zdt); from_utc=true)
 end
 

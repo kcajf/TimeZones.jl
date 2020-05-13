@@ -10,7 +10,7 @@ function Base.trunc(zdt::ZonedDateTime, ::Type{P}) where P <: DatePeriod
 end
 function Base.trunc(zdt::ZonedDateTime, ::Type{P}) where P <: TimePeriod
     local_dt = trunc(DateTime(zdt, Local), P)
-    utc_dt = local_dt - zdt.zone.offset
+    utc_dt = local_dt - current_zone(zdt).offset
     ZonedDateTime(utc_dt, timezone(zdt); from_utc=true)
 end
 Base.trunc(zdt::ZonedDateTime, ::Type{Millisecond}) = zdt

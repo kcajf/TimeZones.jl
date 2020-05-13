@@ -77,12 +77,12 @@ using Dates: Hour, Second, UTM, @dateformat_str
         utc_dt = DateTime(1916, 1, 31, 23)
 
         # Disambiguating parameters ignored when there is no ambiguity.
-        @test ZonedDateTime(local_dt, warsaw).zone.name == "CET"
-        @test ZonedDateTime(local_dt, warsaw, 1).zone.name == "CET"
-        @test ZonedDateTime(local_dt, warsaw, 2).zone.name == "CET"
-        @test ZonedDateTime(local_dt, warsaw, true).zone.name == "CET"
-        @test ZonedDateTime(local_dt, warsaw, false).zone.name == "CET"
-        @test ZonedDateTime(utc_dt, warsaw, from_utc=true).zone.name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw)).name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, 1)).name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, 2)).name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, true)).name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, false)).name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(utc_dt, warsaw, from_utc=true)).name == "CET"
 
         @test ZonedDateTime(local_dt, warsaw).utc_datetime == utc_dt
         @test ZonedDateTime(local_dt, warsaw, 1).utc_datetime == utc_dt
@@ -97,12 +97,12 @@ using Dates: Hour, Second, UTM, @dateformat_str
         utc_dt = DateTime(1916, 5, 31, 22)
 
         # Disambiguating parameters ignored when there is no ambiguity.
-        @test ZonedDateTime(local_dt, warsaw).zone.name == "CEST"
-        @test ZonedDateTime(local_dt, warsaw, 1).zone.name == "CEST"
-        @test ZonedDateTime(local_dt, warsaw, 2).zone.name == "CEST"
-        @test ZonedDateTime(local_dt, warsaw, true).zone.name == "CEST"
-        @test ZonedDateTime(local_dt, warsaw, false).zone.name == "CEST"
-        @test ZonedDateTime(utc_dt, warsaw, from_utc=true).zone.name == "CEST"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw)).name == "CEST"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, 1)).name == "CEST"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, 2)).name == "CEST"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, true)).name == "CEST"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, false)).name == "CEST"
+        @test TimeZones.current_zone(ZonedDateTime(utc_dt, warsaw, from_utc=true)).name == "CEST"
 
         @test ZonedDateTime(local_dt, warsaw).utc_datetime == utc_dt
         @test ZonedDateTime(local_dt, warsaw, 1).utc_datetime == utc_dt
@@ -128,10 +128,10 @@ using Dates: Hour, Second, UTM, @dateformat_str
         @test_throws NonExistentTimeError ZonedDateTime(local_dts[2], warsaw, true)
         @test_throws NonExistentTimeError ZonedDateTime(local_dts[2], warsaw, false)
 
-        @test ZonedDateTime(local_dts[1], warsaw).zone.name == "CET"
-        @test ZonedDateTime(local_dts[3], warsaw).zone.name == "CEST"
-        @test ZonedDateTime(utc_dts[1], warsaw, from_utc=true).zone.name == "CET"
-        @test ZonedDateTime(utc_dts[2], warsaw, from_utc=true).zone.name == "CEST"
+        @test TimeZones.current_zone(ZonedDateTime(local_dts[1], warsaw)).name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(local_dts[3], warsaw)).name == "CEST"
+        @test TimeZones.current_zone(ZonedDateTime(utc_dts[1], warsaw, from_utc=true)).name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(utc_dts[2], warsaw, from_utc=true)).name == "CEST"
 
         @test ZonedDateTime(local_dts[1], warsaw).utc_datetime == utc_dts[1]
         @test ZonedDateTime(local_dts[3], warsaw).utc_datetime == utc_dts[2]
@@ -144,12 +144,12 @@ using Dates: Hour, Second, UTM, @dateformat_str
         utc_dts = (DateTime(1916, 9, 30, 22), DateTime(1916, 9, 30, 23))
         @test_throws AmbiguousTimeError ZonedDateTime(local_dt, warsaw)
 
-        @test ZonedDateTime(local_dt, warsaw, 1).zone.name == "CEST"
-        @test ZonedDateTime(local_dt, warsaw, 2).zone.name == "CET"
-        @test ZonedDateTime(local_dt, warsaw, true).zone.name == "CEST"
-        @test ZonedDateTime(local_dt, warsaw, false).zone.name == "CET"
-        @test ZonedDateTime(utc_dts[1], warsaw, from_utc=true).zone.name == "CEST"
-        @test ZonedDateTime(utc_dts[2], warsaw, from_utc=true).zone.name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, 1)).name == "CEST"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, 2)).name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, true)).name == "CEST"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, false)).name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(utc_dts[1], warsaw, from_utc=true)).name == "CEST"
+        @test TimeZones.current_zone(ZonedDateTime(utc_dts[2], warsaw, from_utc=true)).name == "CET"
 
         @test ZonedDateTime(local_dt, warsaw, 1).utc_datetime == utc_dts[1]
         @test ZonedDateTime(local_dt, warsaw, 2).utc_datetime == utc_dts[2]
@@ -165,12 +165,12 @@ using Dates: Hour, Second, UTM, @dateformat_str
         utc_dts = (DateTime(1922, 5, 31, 21), DateTime(1922, 5, 31, 22))
         @test_throws AmbiguousTimeError ZonedDateTime(local_dt, warsaw)
 
-        @test ZonedDateTime(local_dt, warsaw, 1).zone.name == "EET"
-        @test ZonedDateTime(local_dt, warsaw, 2).zone.name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, 1)).name == "EET"
+        @test TimeZones.current_zone(ZonedDateTime(local_dt, warsaw, 2)).name == "CET"
         @test_throws AmbiguousTimeError ZonedDateTime(local_dt, warsaw, true)
         @test_throws AmbiguousTimeError ZonedDateTime(local_dt, warsaw, false)
-        @test ZonedDateTime(utc_dts[1], warsaw, from_utc=true).zone.name == "EET"
-        @test ZonedDateTime(utc_dts[2], warsaw, from_utc=true).zone.name == "CET"
+        @test TimeZones.current_zone(ZonedDateTime(utc_dts[1], warsaw, from_utc=true)).name == "EET"
+        @test TimeZones.current_zone(ZonedDateTime(utc_dts[2], warsaw, from_utc=true)).name == "CET"
 
         @test ZonedDateTime(local_dt, warsaw, 1).utc_datetime == utc_dts[1]
         @test ZonedDateTime(local_dt, warsaw, 2).utc_datetime == utc_dts[2]
@@ -182,13 +182,13 @@ using Dates: Hour, Second, UTM, @dateformat_str
         # Check behaviour when the "save" offset is larger than an hour.
         paris = first(compile("Europe/Paris", tzdata["europe"]))
 
-        @test ZonedDateTime(DateTime(1945,4,2,1), paris).zone == FixedTimeZone("WEST", 0, 3600)
+        @test TimeZones.current_zone(ZonedDateTime(DateTime(1945,4,2,1), paris)) == FixedTimeZone("WEST", 0, 3600)
         @test_throws NonExistentTimeError ZonedDateTime(DateTime(1945,4,2,2), paris)
-        @test ZonedDateTime(DateTime(1945,4,2,3), paris).zone == FixedTimeZone("WEMT", 0, 7200)
+        @test TimeZones.current_zone(ZonedDateTime(DateTime(1945,4,2,3), paris)) == FixedTimeZone("WEMT", 0, 7200)
 
         @test_throws AmbiguousTimeError ZonedDateTime(DateTime(1945,9,16,2), paris)
-        @test ZonedDateTime(DateTime(1945,9,16,2), paris, 1).zone == FixedTimeZone("WEMT", 0, 7200)
-        @test ZonedDateTime(DateTime(1945,9,16,2), paris, 2).zone == FixedTimeZone("CET", 3600, 0)
+        @test TimeZones.current_zone(ZonedDateTime(DateTime(1945,9,16,2), paris, 1)) == FixedTimeZone("WEMT", 0, 7200)
+        @test TimeZones.current_zone(ZonedDateTime(DateTime(1945,9,16,2), paris, 2)) == FixedTimeZone("CET", 3600, 0)
 
         # Ensure that dates are continuous when both a UTC offset and the DST offset change.
         @test ZonedDateTime(DateTime(1945,9,16,1), paris).utc_datetime == DateTime(1945,9,15,23)
@@ -207,10 +207,10 @@ using Dates: Hour, Second, UTM, @dateformat_str
         ])
 
         # A "spring forward" where 2 hours are skipped.
-        @test ZonedDateTime(DateTime(1950,3,31,23), t).zone == FixedTimeZone("TST",0,0)
+        @test TimeZones.current_zone(ZonedDateTime(DateTime(1950,3,31,23), t)) == FixedTimeZone("TST",0,0)
         @test_throws NonExistentTimeError ZonedDateTime(DateTime(1950,4,1,0), t)
         @test_throws NonExistentTimeError ZonedDateTime(DateTime(1950,4,1,1), t)
-        @test ZonedDateTime(DateTime(1950,4,1,2), t).zone == FixedTimeZone("TDT",0,7200)
+        @test TimeZones.current_zone(ZonedDateTime(DateTime(1950,4,1,2), t)) == FixedTimeZone("TDT",0,7200)
 
 
         # A "fall back" where 2 hours are duplicated. Never appears to occur in reality.
@@ -276,14 +276,14 @@ using Dates: Hour, Second, UTM, @dateformat_str
 
         # Make sure that the duplicated hour only doesn't contain an additional entry.
         @test_throws AmbiguousTimeError ZonedDateTime(DateTime(1935,9,1), dup)
-        @test ZonedDateTime(DateTime(1935,9,1), dup, 1).zone.name == "DTDT-2"
-        @test ZonedDateTime(DateTime(1935,9,1), dup, 2).zone.name == "DTST"
+        @test TimeZones.current_zone(ZonedDateTime(DateTime(1935,9,1), dup, 1)).name == "DTDT-2"
+        @test TimeZones.current_zone(ZonedDateTime(DateTime(1935,9,1), dup, 2)).name == "DTST"
         @test_throws BoundsError ZonedDateTime(DateTime(1935,9,1), dup, 3)
 
         # Ensure that DTDT-1 is completely ignored.
         @test_throws NonExistentTimeError ZonedDateTime(DateTime(1935,4,1), dup)
-        @test ZonedDateTime(DateTime(1935,4,1,1), dup).zone.name == "DTDT-2"
-        @test ZonedDateTime(DateTime(1935,8,31,23), dup).zone.name == "DTDT-2"
+        @test TimeZones.current_zone(ZonedDateTime(DateTime(1935,4,1,1), dup)).name == "DTDT-2"
+        @test TimeZones.current_zone(ZonedDateTime(DateTime(1935,8,31,23), dup)).name == "DTDT-2"
     end
 
     @testset "equality" begin
@@ -293,8 +293,8 @@ using Dates: Hour, Second, UTM, @dateformat_str
         spring_utc = ZonedDateTime(DateTime(2010, 5, 1, 12), utc)
         spring_apia = ZonedDateTime(DateTime(2010, 5, 1, 1), apia)
 
-        @test spring_utc.zone == FixedTimeZone("UTC", 0, 0)
-        @test spring_apia.zone == FixedTimeZone("SST", -39600, 0)
+        @test TimeZones.current_zone(spring_utc) == FixedTimeZone("UTC", 0, 0)
+        @test TimeZones.current_zone(spring_apia) == FixedTimeZone("SST", -39600, 0)
         @test spring_utc == spring_apia
         @test spring_utc !== spring_apia
         @test isequal(spring_utc, spring_apia)
@@ -307,8 +307,8 @@ using Dates: Hour, Second, UTM, @dateformat_str
         fall_utc = ZonedDateTime(DateTime(2010, 10, 1, 12), utc)
         fall_apia = ZonedDateTime(DateTime(2010, 10, 1, 2), apia)
 
-        @test fall_utc.zone == FixedTimeZone("UTC", 0, 0)
-        @test fall_apia.zone == FixedTimeZone("SDT", -39600, 3600)
+        @test TimeZones.current_zone(fall_utc) == FixedTimeZone("UTC", 0, 0)
+        @test TimeZones.current_zone(fall_apia) == FixedTimeZone("SDT", -39600, 3600)
         @test fall_utc == fall_apia
         @test fall_utc !== fall_apia
         @test !(fall_utc < fall_apia)
