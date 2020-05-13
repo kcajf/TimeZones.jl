@@ -12,6 +12,7 @@ function timezone_names()
     for (dir, partial) in check
         for filename in readdir(dir)
             startswith(filename, ".") && continue
+            endswith(filename, ".jl") && continue
 
             path = joinpath(dir, filename)
             name = partial == "" ? filename : join([partial, filename], "/")
