@@ -153,9 +153,10 @@ ERROR: NonExistentTimeError: Local DateTime 2018-03-25T01:00:00 does not exist w
 """
 next_transition_instant
 
-function next_transition_instant(zdt::ZonedDateTime)
+next_transition_instant(zdt::ZonedDateTime{FixedTimeZone}) = nothing
+
+function next_transition_instant(zdt::ZonedDateTime{VariableTimeZone})
     tz = zdt.timezone
-    tz isa VariableTimeZone || return nothing
 
     # Determine the index of the transition which occurs after the UTC datetime specified
     index = searchsortedfirst(
@@ -172,7 +173,9 @@ function next_transition_instant(zdt::ZonedDateTime)
     # transition where the clock changes from 01:59 → 03:00 we would return 02:00 where
     # the UTC datetime of 02:00 == 03:00.
     utc_datetime = tz.transitions[index].utc_datetime
-    ZonedDateTime(utc_datetime, tz, Inner)
+    from_zone = tz.transitions[index - 1].zone
+    to_zone = tz.transitions[index].zone
+    return (utc_datetime, from_zone, to_zone)
 end
 
 next_transition_instant(tz::TimeZone=localzone()) = next_transition_instant(@mock now(tz))
@@ -211,25 +214,28 @@ Transition To:     2011-12-31T00:00:00.000+14:00
 """
 show_next_transition
 
-function show_next_transition(io::IO, zdt::ZonedDateTime)
-    if timezone(zdt) isa FixedTimeZone
-        @warn "No transitions exist in time zone $(timezone(zdt))"
-        return
-    end
+function show_next_transition(io::IO, zdt::ZonedDateTime{FixedTimeZone})
+    @warn "No transitions exist in time zone $(timezone(zdt))"
+    return
+end
 
-    instant = next_transition_instant(zdt)
+function show_next_transition(io::IO, zdt::ZonedDateTime{VariableTimeZone})
+    tran_info = next_transition_instant(zdt)
 
-    if instant === nothing
+    if tran_info === nothing
         @warn "No transition exists in $(timezone(zdt)) after: $zdt"
         return
     end
 
+    instant, from_zone, to_zone = tran_info
     epsilon = eps(instant)
-    from, to = instant - epsilon, instant + zero(epsilon)
-    from_zone, to_zone = current_zone(from), current_zone(to)
+    from = ZonedDateTime(instant - epsilon, from_zone; from_utc=true)
+    to = ZonedDateTime(instant, to_zone; from_utc=true)
     direction = value(to_zone.offset - from_zone.offset) < 0 ? "Backward" : "Forward"
+    instant_in_from = ZonedDateTime(instant, from_zone; from_utc=true)
 
-    function zdt_format(zdt, zone)
+    function zdt_format(zdt)
+        zone = current_zone(zdt)
         name_suffix = zone.name
         !isempty(name_suffix) && (name_suffix = string(" (", name_suffix, ")"))
         string(
@@ -243,10 +249,10 @@ function show_next_transition(io::IO, zdt::ZonedDateTime)
     end
 
     println(io, "Transition Date:   ", Dates.format(instant, dateformat"yyyy-mm-dd"))
-    println(io, "Local Time Change: ", time_format(instant), " → ", time_format(to), " (", direction, ")")
+    println(io, "Local Time Change: ", time_format(instant_in_from), " → ", time_format(to), " (", direction, ")")
     println(io, "Offset Change:     ", repr("text/plain", from_zone.offset), " → ", repr("text/plain", to_zone.offset))
-    println(io, "Transition From:   ", zdt_format(from, from_zone))
-    println(io, "Transition To:     ", zdt_format(to, to_zone))
+    println(io, "Transition From:   ", zdt_format(from))
+    println(io, "Transition To:     ", zdt_format(to))
 
 end
 

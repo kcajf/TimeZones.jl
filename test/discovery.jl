@@ -35,31 +35,32 @@ paris = first(compile("Europe/Paris", tzdata["europe"]))
 
 @testset "next_transition_instant" begin
     @testset "non-existent" begin
-        instant = next_transition_instant(ZonedDateTime(2018, 1, 1, wpg))
-        expected_instant = ZonedDateTime(DateTime(2018, 3, 11, 8), wpg, TimeZones.Inner)
-        expected_valid = ZonedDateTime(2018, 3, 11, 3, wpg)
+        instant, from_zone, to_zone = next_transition_instant(ZonedDateTime(2018, 1, 1, wpg))
+        expected_instant = DateTime(2018, 3, 11, 8)
+        expected_from_zone = "CST"
+        expected_to_zone = "CDT"
 
-        # @test instant === expected_instant
-        @test instant == expected_valid
-        # @test instant !== expected_valid
-        @test instant + Millisecond(0) === expected_valid
+        @test instant == expected_instant
+        @test from_zone.name == expected_from_zone
+        @test to_zone.name == expected_to_zone
     end
 
     @testset "ambiguous" begin
-        instant = next_transition_instant(ZonedDateTime(2018, 6, 1, wpg))
-        expected_instant = ZonedDateTime(DateTime(2018, 11, 4, 7), wpg, TimeZones.Inner)
-        expected_valid = ZonedDateTime(2018, 11, 4, 1, wpg, 2)
+        instant, from_zone, to_zone = next_transition_instant(ZonedDateTime(2018, 6, 1, wpg))
+        expected_instant = DateTime(2018, 11, 4, 7) 
+        expected_from_zone = "CDT"
+        expected_to_zone = "CST"
 
-        # @test instant === expected_instant
-        @test instant == expected_valid
-        # @test instant !== expected_valid
-        @test instant + Millisecond(0) === expected_valid
+        @test instant == expected_instant
+        @test from_zone.name == expected_from_zone
+        @test to_zone.name == expected_to_zone
     end
 
     @testset "upcoming" begin
         local patch = @patch now(tz::TimeZone) = ZonedDateTime(2000, 1, 1, tz)
         apply(patch) do
-            @test next_transition_instant(wpg) == ZonedDateTime(2000, 4, 2, 3, wpg)
+            instant, from_zone, to_zone = next_transition_instant(wpg)
+            @test ZonedDateTime(instant, to_zone, from_utc=true) == ZonedDateTime(2000, 4, 2, 3, wpg)
         end
     end
 
@@ -79,8 +80,6 @@ end
 
 @testset "show_next_transition" begin
     @testset "non-existent" begin
-        x = sprint(show_next_transition, ZonedDateTime(2018, 1, 1, wpg))
-        println(x)
         @test sprint(show_next_transition, ZonedDateTime(2018, 1, 1, wpg)) ==
             """
             Transition Date:   2018-03-11

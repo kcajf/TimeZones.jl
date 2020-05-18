@@ -9,12 +9,12 @@ using Dates: AbstractDateTime, argerror, validargs
 
 abstract type Inner end
 
-struct ZonedDateTime <: AbstractDateTime
+struct ZonedDateTime{TZ <: TimeZone} <: AbstractDateTime
     utc_datetime::DateTime
-    timezone::TimeZone
+    timezone::TZ
 
     function ZonedDateTime(utc_datetime::DateTime, timezone::TimeZone)
-        return new(utc_datetime, timezone)
+        return new{typeof(timezone)}(utc_datetime, timezone)
     end
 
     # Previously, there was:
@@ -25,29 +25,23 @@ struct ZonedDateTime <: AbstractDateTime
     # so for now add this disambiguating 3rd argument `Inner`. Can revisit tidying that up later.
     
     function ZonedDateTime(utc_datetime::DateTime, timezone::FixedTimeZone, ::Type{Inner})
-        return new(utc_datetime, timezone)
+        return new{typeof(timezone)}(utc_datetime, timezone)
     end
 
     function ZonedDateTime(utc_datetime::DateTime, timezone::VariableTimeZone, ::Type{Inner})
         if timezone.cutoff !== nothing && utc_datetime >= timezone.cutoff
             throw(UnhandledTimeError(timezone))
         end
-        return new(utc_datetime, timezone)
+        return new{typeof(timezone)}(utc_datetime, timezone)
     end
 end
 
 
-# TODO Once I change ZonedDateTime to be parametric in the timezone type, this if/else will become a type dispatch
-function current_zone(ztd::ZonedDateTime)
-    if isa(ztd.timezone, VariableTimeZone)
-        # ztd is a valid ZonedDateTime, so there is only a single unambiguous zone active at ztd.utc_datetime
-        range = transition_range(ztd.utc_datetime, ztd.timezone, UTC)
-        return ztd.timezone.transitions[first(range)].zone
-    elseif isa(ztd.timezone, FixedTimeZone)
-        return ztd.timezone
-    else
-        error("unknown timezone type $(typeof(ztd.timezone))")
-    end
+current_zone(ztd::ZonedDateTime{FixedTimeZone}) = ztd.timezone
+
+function current_zone(ztd::ZonedDateTime{VariableTimeZone})
+    range = transition_range(ztd.utc_datetime, ztd.timezone, UTC)
+    return ztd.timezone.transitions[first(range)].zone
 end
 
 """

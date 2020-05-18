@@ -57,7 +57,7 @@ that UTC context will always return a range of length one.
 transition_range(::DateTime, ::VariableTimeZone, ::Type{Union{Local,UTC}})
 
 function interpret(local_dt::DateTime, tz::VariableTimeZone, ::Type{Local})
-    interpretations = ZonedDateTime[]
+    interpretations = ZonedDateTime{VariableTimeZone}[]
     t = tz.transitions
     n = length(t)
     for i in transition_range(local_dt, tz, Local)
@@ -99,7 +99,7 @@ Aside: the function name refers to a period of invalid local time (gap) caused b
 saving time or offset changes (shift).
 """
 function shift_gap(local_dt::DateTime, tz::VariableTimeZone)
-    boundaries = ZonedDateTime[]
+    boundaries = ZonedDateTime{VariableTimeZone}[]
     t = tz.transitions
     n = length(t)
     delta = eps(local_dt)
